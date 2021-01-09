@@ -35,7 +35,8 @@ elo_long %>%
   group_by(season) %>% 
   mutate(rank = rank(-elo)) %>% 
   ggplot(aes(x = 1, y = rank)) +
-  geom_text(aes(label = team)) +
+  geom_text(aes(label = team), size = 3) +
+            # position = position_nudge(y = 0.3)) +
   scale_x_continuous(labels = NULL) +
   scale_y_continuous(breaks = 1:30) +
   facet_wrap(~season, nrow = 1) +
@@ -43,5 +44,6 @@ elo_long %>%
        x = NULL,
        y = NULL) +
   theme(panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank())
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank())
 # ggsave("Plots/historical_elo_rankings.png", height = 8, width = 10)
