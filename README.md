@@ -1,1 +1,1 @@
-# nba-predictor
+# NBA game predictions, updated daily
