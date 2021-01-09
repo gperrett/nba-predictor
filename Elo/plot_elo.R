@@ -5,14 +5,17 @@ theme_set(theme_minimal())
 # read in the data
 elo_ratings <- read_csv("Elo/Data/historical_elo.csv")
 
-# pivot data longer
+# pivot data longer and add season
 elo_long <- elo_ratings %>% 
   mutate(team1 = paste0(team1, ":", team1_elo),
          team2 = paste0(team2, ":", team2_elo)) %>% 
   pivot_longer(cols = c(team1, team2)) %>%
   separate(value, sep = ":", into = c("team", "elo")) %>% 
   select(date, team, elo) %>% 
-  mutate(elo = as.numeric(elo))
+  mutate(elo = as.numeric(elo),
+         year = lubridate::year(date),
+         month = lubridate::month(date),
+         season = if_else(month < 7, year - 1, year))
 
 # plot elo scores over time
 elo_long %>% 
@@ -24,19 +27,21 @@ elo_long %>%
        color = NULL)
 # ggsave("Plots/historical_elo_ratings.png", height = 5, width = 8)
 
-# elo ratings by year (not season)
-elo_long %>% 
-  mutate(year = lubridate::year(date)) %>% 
-  filter(year > 2010) %>% 
-  group_by(year, team) %>% 
+# elo ratings by season
+elo_long %>%  
+  filter(season > 2010) %>% 
+  group_by(season, team) %>% 
   filter(date == max(date)) %>%
-  group_by(year) %>% 
+  group_by(season) %>% 
   mutate(rank = rank(-elo)) %>% 
   ggplot(aes(x = 1, y = rank)) +
   geom_text(aes(label = team)) +
   scale_x_continuous(labels = NULL) +
-  facet_wrap(~year, nrow = 1) +
-  labs(title = "Teams ranked by elo rating by year (not season)",
+  scale_y_continuous(breaks = 1:30) +
+  facet_wrap(~season, nrow = 1) +
+  labs(title = "Teams ranked by elo rating by season",
        x = NULL,
-       y = NULL)
+       y = NULL) +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank())
 # ggsave("Plots/historical_elo_rankings.png", height = 8, width = 10)

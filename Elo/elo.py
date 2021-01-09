@@ -16,7 +16,7 @@ game_data = pd.read_csv("Elo/Data/nba_elo.csv")
 # retain only important columns and filter to the last 30 years
 game_data = game_data[['date', 'season', 'team1', 'team2', 'score1', 'score2']]
 game_data['date'] = pd.to_datetime(game_data['date'], format='%Y-%m-%d')
-is_historical = (game_data[['date']] < pd.to_datetime('20200108', format='%Y%m%d')) & (game_data[['date']] > pd.to_datetime('19901001', format='%Y%m%d'))
+is_historical = (game_data[['date']] < pd.to_datetime('20210108', format='%Y%m%d')) & (game_data[['date']] > pd.to_datetime('19901001', format='%Y%m%d'))
 game_data = game_data.loc[np.array(is_historical)].reset_index()
 
 ### define parameters and base functions
@@ -111,6 +111,7 @@ for index, row in game_data.iterrows():
     elo_dates.append(game_date)
     elo_rating_team1.append(float(current_elo_ratings.loc[team1].values))
     elo_rating_team2.append(float(current_elo_ratings.loc[team2].values))
+
 
 # write out results
 final_elo_ratings = game_data #.iloc[np.linspace(0 , 6582, 6582)]
