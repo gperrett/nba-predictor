@@ -16,16 +16,16 @@ game_data = pd.read_csv("Elo/Data/nba_elo.csv")
 # retain only important columns and filter to the last 30 years
 game_data = game_data[['date', 'season', 'team1', 'team2', 'score1', 'score2']]
 game_data['date'] = pd.to_datetime(game_data['date'], format='%Y-%m-%d')
-is_historical = (game_data[['date']] < pd.to_datetime('20210108', format='%Y%m%d')) & (game_data[['date']] > pd.to_datetime('19901001', format='%Y%m%d'))
+is_historical = (game_data[['date']] < pd.to_datetime('20210108', format='%Y%m%d')) & (game_data[['date']] > pd.to_datetime('19900601', format='%Y%m%d'))
 game_data = game_data.loc[np.array(is_historical)].reset_index()
 
 ### define parameters and base functions
 # parameters
 rookie_elo = 1300
-k_factor = 24 #starting value for K factor; 538 starts theirs at 24
-c_factor = 400 #set to 400 in chess system. means that an opponent that is 200 pts greater has a 75% chance of winning
-u_elo = 1500 #mean rating to normalize to
-sd_elo = 200 #standard deviation that the Elo rating are normalized to after each race
+k_factor = 40 # grid search determined this was optimal value based on MSE of exp win - actual win
+c_factor = 400 # set to 400 in chess system. means that an opponent that is 200 pts greater has a 75% chance of winning
+u_elo = 1500 # mean rating to normalize to
+sd_elo = 200 # standard deviation of ratings to normalize to
 
 #curve for k_factor; varies with game not season
 plt.plot(1 / (np.linspace(1, 200)**(1/10)) * k_factor)
@@ -52,21 +52,20 @@ def normalize_elo(elo_ratings, u_elo=u_elo, sd_elo=sd_elo):
 #exp_win = get_exp_win(1500, 2000)
 #calc_rating(10, 1, exp_win, 1500)
 
-### initialize rating dataframe
-# get unique dates and games
-dates = game_data.date.unique()
+# get unique datesteams
 teams1 = game_data.team1.unique()
 teams2 = game_data.team2.unique()
 teams = np.concatenate((teams1, teams2))
 teams = pd.Series(teams).unique()
 
-# df of latest elo ratings
+# initialize df of rating (this will hold the latest elo ratings)
 current_elo_ratings = pd.DataFrame({'rating': rookie_elo}, index=teams)
 
 # intialize lists to append elo results to
 elo_dates = []
 elo_rating_team1 = []
 elo_rating_team2 = []
+#k_tuning = []
 
 # iterate over the game data frame and calculate the new elo ratings
 # takes ~10min
@@ -104,7 +103,7 @@ for index, row in game_data.iterrows():
     current_elo_ratings.loc[[team2]] = rating_team2
 
     # normalize elo ratings
-    # TODO: remove historical teams? normalize at end of each day instead?
+    # TODO: are there historical teams that should be removed?
     current_elo_ratings = normalize_elo(current_elo_ratings)
 
     # save the ratings to the history
@@ -112,6 +111,21 @@ for index, row in game_data.iterrows():
     elo_rating_team1.append(float(current_elo_ratings.loc[team1].values))
     elo_rating_team2.append(float(current_elo_ratings.loc[team2].values))
 
+    # save the squared error to later assess k factor
+    #k_tuning.append(float((exp_team1 - winner1)**2) + float((exp_team2 - (not winner1))**2))
+
+
+# kfactor results of 2010-2020
+#np.mean(k_tuning)
+# 10 = 0.4847999117222912
+# 20 = 0.4633329762656422
+# 30 = 0.45797306263811216
+# 35 = 0.45693282735040835
+# 40 = 0.4565609863859344
+# 45 = 0.4566970121366243
+# 50 = 0.45721915090217674
+# 75 = 0.4630154165519191
+# 100 = 0.4711452135111493
 
 # write out results
 final_elo_ratings = game_data #.iloc[np.linspace(0 , 6582, 6582)]
