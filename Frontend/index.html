@@ -1,5 +1,3 @@
-<!-- https://css-tricks.com/look-ma-no-media-queries-responsive-layouts-using-css-grid/ -->
-
 <html>
 <head>
     <link rel="stylesheet" type="text/css" href="meyer.css">
@@ -10,149 +8,13 @@
     <section>
       <h1>NBA Game Predictions</h1>
     </section>
-    <section class="cards" id="cards">
-      <h3>Saturday, January 9th</h3>
-      <ul>
-        <li>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo
-          </p>
-          <ul>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 1</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-            <li><hr></li>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 2</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo
-          </p>
-          <ul>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 1</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-            <li><hr></li>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 2</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo
-          </p>
-          <ul>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 1</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-            <li><hr></li>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 2</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-          </ul>
-        </li>
-      </ul>
-      <h3>Sunday, January 10th</h3>
-      <ul>
-        <li>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo
-          </p>
-          <ul>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 1</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-            <li><hr></li>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 2</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo
-          </p>
-          <ul>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 1</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-            <li><hr></li>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 2</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo
-          </p>
-          <ul>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 1</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-            <li><hr></li>
-            <li>
-              <div class='team_box'>
-                <p class="alignleft">Team 2</p>
-                <p class="alignright">50%</p>
-              </div>
-              <div style="clear: both;"></div>
-            </li>
-          </ul>
-        </li>
-      </ul>
-    </section>
+    <div id="gridContainer" class="cards"></div>
   </main>
 </body>
 <footer>
-  <p>Updated daily at 6am Eastern Time. Download the current predictions <a href="">here</a>.</p>
+  <p>Updated daily at 6am Eastern Time. See the methodology <a href="https://github.com/gperrett/nba-predictor">here</a> and download the current predictions <a href="Data/game_predictions.csv">here</a>.</p>
 </footer>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://d3js.org/d3.v5.js"></script>
+<script src="/Frontend/buildGrid.js"></script>
 </html>

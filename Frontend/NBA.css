@@ -72,7 +72,7 @@ h3 {
   color: #666666;
 }
 
-.team_box > p {
+.teamBox > p {
   font-size: 1rem;
   line-height: 1.5;
   padding: 0.5rem 0.75rem 0.5rem .75rem;
@@ -84,7 +84,7 @@ h3 {
   margin: .5rem;
 }
 
-.cards > ul > li > ul > li > hr {
+.cards > ul > li > li > hr {
   border-color: #e8e8e8;
   height: 0px;
   margin: 0 0.7rem 0 0.7rem;
