@@ -1,0 +1,108 @@
+
+
+body {
+    font-family: "Roboto", Helvetica, Arial, sans-serif;
+    margin: 1rem;
+}
+
+p, a {
+  font-family: "Roboto", Helvetica, Arial, sans-serif;
+}
+
+/* Generic styles */
+html {
+  scroll-behavior: smooth;
+}
+
+a {
+  text-decoration: none;
+  color: #fff;
+  border-radius: .25rem;
+  text-align: center;
+  display: inline-block;
+  font-weight: 700;
+}
+
+a:hover {
+  opacity: .6;
+}
+
+h1 {
+  display: block;
+  font-size: 2em;
+  margin: 1rem 0 1rem 0;
+  font-weight: bold;
+  color: #525252;
+}
+
+h3 {
+  display: block;
+  font-size: 1.17em;
+  margin: 0.6rem 0 0.6rem 0;
+  font-weight: bold;
+  color: #525252;
+}
+
+/* cards styles */
+.cards {
+  padding: 0rem;
+}
+
+.cards > h3 {
+  font-color: red;
+  padding: 2rem 0 0rem 0;
+}
+
+.cards > ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-gap: 1rem;
+}
+
+.cards > ul > li {
+  border: 1px solid #E2E2E2;
+  border-radius: 0.15rem;
+  background-color: #fff;
+}
+
+.cards > ul > li > p {
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: 1rem .75rem;
+  color: #666666;
+}
+
+.team_box > p {
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.75rem 0.5rem .75rem;
+  color: #666666;
+}
+
+.cards > ul > li > a {
+  padding: .5rem 1rem;
+  margin: .5rem;
+}
+
+.cards > ul > li > ul > li > hr {
+  border-color: #e8e8e8;
+  height: 0px;
+  margin: 0 0.7rem 0 0.7rem;
+}
+
+.alignleft {
+	float: left;
+}
+.alignright {
+	float: right;
+}
+
+footer {
+  background-color: #394E48;
+  border-radius: 0.15rem;
+  padding: .75rem;
+  margin: 3rem 0 0 0;
+  color: white;
+  text-align: center;
+  font-size: .75rem;
+}
