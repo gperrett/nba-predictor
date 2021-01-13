@@ -85,7 +85,7 @@ function drawData(data, config, scales){
   let grouped = d3.nest()
     .key(d => d.team)
     .entries(data)
-  console.log('here', grouped)
+  console.log('Grouped data:', grouped)
 
   // filter the data for the current data
   // TODO: issue here if teams didn't play today
@@ -132,13 +132,12 @@ function drawData(data, config, scales){
     let name = d3.select(this).attr('team')
     d3.selectAll("[team=" + name + "_path]")
       .transition()
-        .duration(200)
+        .duration(150)
         .style('stroke-opacity', 1)
     d3.selectAll("[team=" + name + "_circle]")
       .transition()
-        .duration(200)
+        .duration(150)
         .style('opacity', 1)
-    //TODO: should fade the stroke color here
   }
 
   function mousemove(d){
@@ -155,18 +154,18 @@ function drawData(data, config, scales){
     // re-emphasize other points
     d3.selectAll('.currentPoints')
       .transition()
-        .duration(300)
+        .duration(200)
         .style('opacity', 0.8)
 
     // get team name and change the stroke with all values with this team name
     let name = d3.select(this).attr('team')
     d3.selectAll("[team=" + name + "_path]")
       .transition()
-        .duration(300)
+        .duration(200)
         .style('stroke-opacity', 0)
     d3.selectAll("[team=" + name + "_circle]")
       .transition()
-        .duration(300)
+        .duration(200)
         .style('opacity', 0)
   }
 
@@ -265,7 +264,6 @@ function drawData(data, config, scales){
       .on('mouseover', mouseover)
       .on('mousemove', mousemove)
       .on('mouseleave', mouseleave)
-
 }
 
 function buildPlot(data){
