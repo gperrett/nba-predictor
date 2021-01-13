@@ -13,6 +13,9 @@ function buildGrid(data){
     thisDate = uniqueDates[i]
     filteredData = data.filter(d => {return d.date == thisDate})
 
+    // sort list by win probability
+    filteredData = filteredData.sort((a, b) => d3.ascending(Math.abs(0.5 - a.probA), Math.abs(0.5 - b.probA)))
+
     // add date title
     dateFormat = {weekday: 'long', month: 'long', day: 'numeric'}
     formattedDate = new Date(uniqueDates[i]).toLocaleDateString('en', dateFormat)
@@ -40,20 +43,7 @@ function buildGrid(data){
       new_ul_inner.append('<li><div class="teamBox"><p class="alignleft">' + teamA + '</p><p class="alignright">' + teamAprob + '</p></div><div style="clear: both;"></div></li>')
       new_ul_inner.append('<li><hr></li>')
       new_ul_inner.append('<li><div class="teamBox"><p class="alignleft">' + teamB + '</p><p class="alignright">' + teamBprob + '</p></div><div style="clear: both;"></div></li>')
-      new_ul_inner.append('<ul>')
+      new_ul_inner.append('</ul>')
     }
   }
 }
-
-// read in the data
-function loadData() {
-    return Promise.all([
-        d3.csv("/Frontend/Data/game_predictions.csv")
-    ]).then(datasets => {
-        predictions = datasets[0];
-        return predictions;
-    })
-}
-
-// run it
-loadData().then(buildGrid)
