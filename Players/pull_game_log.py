@@ -31,7 +31,7 @@ def get_player_stat(name):
 
 from multiprocessing.dummy import Pool
 
-pool = Pool(12)
+pool = Pool(os.cpu_count())
 if __name__ == '__main__':
     results = pool.map(get_player_stat, test, 1)
 
