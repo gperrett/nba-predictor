@@ -26,6 +26,7 @@ function cleanData(data){
   uniqueDates = d3.map(data, d => d.date).keys()
   uniqueDates = uniqueDates.sort(d3.descending)
   let nDays = 15
+  // TODO: I don't think this date filtering doesn't work
   newData = newData.filter(d => {return d.date >= uniqueDates[nDays]})
 
   return newData;
@@ -112,7 +113,7 @@ function drawData(data, config, scales){
     .attr('class', 'axisLabel')
     .attr("transform",
             "translate(" + bodyWidth*3/9 + " ," + (bodyHeight + (margin.bottom*3/5)) + ")")
-    .text("Rating change in last 15 days")
+    .text("Rating change in last 10 days")
 
   // create a tooltip
   let tooltip = d3.select("#plotRank")
@@ -128,6 +129,11 @@ function drawData(data, config, scales){
     d3.selectAll('.currentPoints')
       .style('opacity', 0.2)
 
+    // emphasize this current point tho
+    d3.select(this)
+      .style('opacity', 1)
+      .style('fill', '#666666')
+
     // get team name and change the stroke with all values with this team name
     let name = d3.select(this).attr('team')
     d3.selectAll("[team=" + name + "_path]")
@@ -138,11 +144,15 @@ function drawData(data, config, scales){
       .transition()
         .duration(150)
         .style('opacity', 1)
+
+    // highlight row on table
+    d3.selectAll('table').select('[team=' + name + ']')
+      .style("background-color", '#f1f1f1')
   }
 
   function mousemove(d){
     tooltip
-      .html("<p style='font-weight: 700'>" + d.team + "</p>Last 15 days")
+      .html("<p style='font-weight: 700'>#" + d.rank + ": " + d.team + "</p>Historical ratings shown")
       .style("left", (d3.event.pageX + 20) + "px")
       .style("top", (d3.event.pageY + 20) + "px")
   }
@@ -153,20 +163,23 @@ function drawData(data, config, scales){
 
     // re-emphasize other points
     d3.selectAll('.currentPoints')
-      .transition()
-        .duration(200)
-        .style('opacity', 0.8)
+      .style('opacity', 0.8)
+      .style('fill', '#adadad')
 
     // get team name and change the stroke with all values with this team name
     let name = d3.select(this).attr('team')
     d3.selectAll("[team=" + name + "_path]")
       .transition()
-        .duration(200)
+        .duration(100)
         .style('stroke-opacity', 0)
     d3.selectAll("[team=" + name + "_circle]")
       .transition()
-        .duration(200)
+        .duration(100)
         .style('opacity', 0)
+
+    // de-highlight row on table
+    d3.selectAll('table').select('[team=' + name + ']')
+      .style("background-color", '#fff')
   }
 
   // add quadrant identifiers
@@ -219,15 +232,20 @@ function drawData(data, config, scales){
     .style("fill", "none");
 
   // add historical lines
-  let line = d3.line()
+  var myColor = d3.scaleLinear()
+    .domain([-200,200])
+    .range(["white", "blue"])
+  let historicalLine = d3.line()
+      .curve(d3.curveCatmullRom.alpha(1))
       .x(d => xScale(d.rating_delta))
       .y(d => yScale(d.rating))
+
   container.append('g')
       .selectAll('lines')
       .data(grouped)
       .enter()
       .append("path")
-        .attr('d', d => line(d.values))
+        .attr('d', d => historicalLine(d.values))
         .style('stroke-width', 1.5)
         .attr('stroke', '#666666')
         .style('fill', 'none')
@@ -244,6 +262,7 @@ function drawData(data, config, scales){
       .attr("cy", d => yScale(d.rating))
       .attr("r", 4)
       .style("fill", "#666666")
+      .style("stroke", '#fff')
       .style('opacity', 0)
       .attr('team', d => d.team + "_circle")
 
@@ -261,6 +280,7 @@ function drawData(data, config, scales){
       .style('stroke', '#fff')
       .attr('class', 'currentPoints')
       .attr('team', d => d.team)
+      .attr('teamShape', d => d.team + "_currentCircle")
       .on('mouseover', mouseover)
       .on('mousemove', mousemove)
       .on('mouseleave', mouseleave)

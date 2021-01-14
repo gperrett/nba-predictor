@@ -2,7 +2,7 @@
 
 body {
     font-family: "Roboto", Helvetica, Arial, sans-serif;
-    margin: 1rem;
+    margin: 1em;
 }
 
 p, a {
@@ -10,7 +10,7 @@ p, a {
 }
 
 p {
-  font-size: 1rem;
+  font-size: 1em;
   color: #666666;
 }
 
@@ -49,8 +49,9 @@ h3, h5 {
 }
 
 h5 {
-  font-size: 1rem;
-  padding: 0.6rem 0 0 0
+  font-size: 0.8em;
+  padding: 0.5rem 0 0 0;
+  color: #666666;
 }
 
 #gridContainer h3:first-child {
@@ -79,13 +80,13 @@ h5 {
 }
 
 .cards > ul > li > p {
-  font-size: 1rem;
+  font-size: 1em;
   line-height: 1.5;
   padding: 1rem .75rem;
 }
 
 .teamBox > p {
-  font-size: 1rem;
+  font-size: 1em;
   line-height: 1.5;
   padding: 0.5rem 0.75rem 0.5rem .75rem;
 }
@@ -116,12 +117,14 @@ footer {
 }
 
 footer > p {
-  font-size: .75rem;
+  font-size: 0.75em;
 }
 
 .tab {
   overflow: hidden;
   border: none;
+  border-width: 0;
+  padding: 0;
   background-color: #f1f1f1;
 }
 
@@ -130,8 +133,10 @@ footer > p {
   background-color: inherit;
   float: left;
   border: none;
+  border-width: 0;
   outline: none;
   cursor: pointer;
+  margin: 0;
   padding: 1rem 1.1rem;
   transition: 0.3s;
 }
@@ -161,14 +166,17 @@ footer > p {
 
 #plotRankContainer, #tableRankContainer {
   float: left;
-  margin: 0 4rem 0 0;
+}
+
+#plotRankContainer {
+  margin: 0 2rem 0 0;
 }
 
 th, td {
-  padding: 8px;
+  padding: 4px 14px 4px 14px;
   text-align: left;
   border-bottom: 1px solid #E2E2E2;
-  font-size: 1rem;
+  font-size: 0.8em;
   color: #666666;
 }
 
@@ -176,22 +184,49 @@ th {
   font-weight: 700;
 }
 
-#tableRankContainer {
-  max-width: 200px;
+#plotRankContainer {
+  width: 800px;
+  max-width: 60%;
 }
 
-#plotRankContainer {
-  width: 60%;
+#tableRankContainer {
+  max-width: 95%;
+}
+
+#plotRank {
+  max-width: 800px;
 }
 
 @media (max-width: 767px) {
   #plotRankContainer {
     width: 95%;
+    max-width: 95%;
   }
-}
-
-#plotRank {
-  max-width: 100%;
+  #tableRankContainer {
+    display: inline-block;
+    width: 95%;
+    max-width: 95%;
+    margin: 0;
+    padding: 0;
+  }
+  #tableRank {
+    table-layout: fixed;
+    width: 100%;
+    max-width: 95%;
+    margin: auto;
+    margin-bottom: 0;
+    padding: 0;
+    display: table;
+  }
+  .colWidth_Rank {
+    width: 50%;
+  }
+  .colWidth_Team {
+    width: 50%;
+  }
+  .colWidth_Rating {
+    width: 50%;
+  }
 }
 
 .tooltip {
@@ -220,10 +255,11 @@ th {
 
 .axisLabel {
   fill: #666666;
+  font-size: 0.8em;
 }
 
 .quadrantText {
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.5em;
   fill: #E2E2E2;
 }
