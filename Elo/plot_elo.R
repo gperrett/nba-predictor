@@ -5,17 +5,14 @@ theme_set(theme_minimal())
 # read in the data
 elo_ratings <- read_csv("Elo/Data/historical_elo.csv")
 
-# pivot data longer and add season
+# pivot data longer 
 elo_long <- elo_ratings %>% 
   mutate(team1 = paste0(team1, ":", team1_elo),
          team2 = paste0(team2, ":", team2_elo)) %>% 
   pivot_longer(cols = c(team1, team2)) %>%
   separate(value, sep = ":", into = c("team", "elo")) %>% 
-  select(date, team, elo) %>% 
-  mutate(elo = as.numeric(elo),
-         year = lubridate::year(date),
-         month = lubridate::month(date),
-         season = if_else(month < 7, year - 1, year))
+  select(date, season, team, elo) %>% 
+  mutate(elo = as.numeric(elo))
 
 # plot elo scores over time
 elo_long %>% 

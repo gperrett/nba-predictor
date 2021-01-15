@@ -28,11 +28,30 @@ u_elo = 1500 # mean rating to normalize to
 sd_elo = 200 # standard deviation of ratings to normalize to
 
 #curve for k_factor; varies with game not season
-plt.plot(1 / (np.linspace(1, 200)**(1/10)) * k_factor)
+#plt.plot(1 / (np.linspace(1, 200)**(1/10)) * k_factor)
 #plt.show()
 
-def get_exp_win(rating_team_A, rating_team_B, c_factor=c_factor):
+# need to incorporate:
+    # fatigue discount
+    # margin of victory
+
+# home court advantage
+np.mean(game_data.score1 > game_data.score2) - 0.5
+# see empiricals.R script
+
+# fatigue should be based on
+
+# basic functions
+def get_exp_win(rating_team_A, rating_team_B, home_court, fatigue, c_factor=c_factor, home_court_advantage=0.1):
     exp_win = 1 / (1 + 10 ** ((rating_team_B - rating_team_A)/c_factor))
+
+    # reduce/increase exp win probably based on home court status
+    exp_win = exp_win + (home_court * home_court_advantage) - ((not home_court) * home_court_advantage)
+    exp_win = np.min([1, np.max([0, exp_win])])
+
+    # adjust for fatigue
+
+
     return exp_win
 
 def calc_rating(tenure, actual_win, expected_win, previous_rating, k_factor=k_factor):
