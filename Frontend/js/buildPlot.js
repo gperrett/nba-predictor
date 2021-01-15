@@ -4,11 +4,13 @@ function cleanData(data){
   // split data into each team
   uniqueTeams = d3.map(data, d => d.team).keys()
 
+  /*
   // initiate object to hold new data
   newData = []
 
   for (var i=0; i<uniqueTeams.length; i++){
     // get date and filter the data to that date
+    filteredData = []
     filteredData = data.filter(d => {return d.team == uniqueTeams[i]})
 
     // add new column with change in rating in last 10 days
@@ -21,25 +23,26 @@ function cleanData(data){
     // add data to dataframe
     newData = newData.concat(filteredData)
   }
+  */
 
-  // filter to last 15 days
+  // filter to last 30 days
   uniqueDates = d3.map(data, d => d.date).keys()
   uniqueDates = uniqueDates.sort(d3.descending)
-  let nDays = 15
+  let nDays = 30
   // TODO: I don't think this date filtering doesn't work
-  newData = newData.filter(d => {return d.date >= uniqueDates[nDays]})
+  newData = data.filter(d => {return d.date >= uniqueDates[nDays]})
 
   return newData;
 }
 
 function getConfig(){
-  let width = 800;
-  let height = 600;
+  let width = 600;
+  let height = 450;
   let margin = {
-      top: 10,
-      bottom: 70,
+      top: 30,
+      bottom: 80,
       left: 80,
-      right: 50
+      right: 20
   }
 
   //The body is the area that will be occupied by the bars.
@@ -74,12 +77,16 @@ function getScales(data, config) {
      .domain([minY, maxY])
      .range([bodyHeight, 0])
 
- return {xScale, yScale}
+ let colorScale = d3.scaleOrdinal()
+      .domain(["Eastern", "Western"])
+      .range(["#C58581", "#224870"])
+
+ return {xScale, yScale, colorScale}
 }
 
 function drawData(data, config, scales){
   let {margin, container, bodyHeight, bodyWidth, width, height} = config;
-  let {xScale, yScale} = scales;
+  let {xScale, yScale, colorScale} = scales;
   console.log('Data into drawData():', data)
 
   // group the data for drawing the historical lines
@@ -112,8 +119,8 @@ function drawData(data, config, scales){
   container.append('text')
     .attr('class', 'axisLabel')
     .attr("transform",
-            "translate(" + bodyWidth*3/9 + " ," + (bodyHeight + (margin.bottom*3/5)) + ")")
-    .text("Rating change in last 10 days")
+            "translate(" + bodyWidth*3/9 + " ," + (bodyHeight + (margin.bottom*2.5/5)) + ")")
+    .text("Rating trend over last 15 days")
 
   // create a tooltip
   let tooltip = d3.select("#plotRank")
@@ -132,7 +139,7 @@ function drawData(data, config, scales){
     // emphasize this current point tho
     d3.select(this)
       .style('opacity', 1)
-      .style('fill', '#666666')
+      .style('fill', '#394E48')
 
     // get team name and change the stroke with all values with this team name
     let name = d3.select(this).attr('team')
@@ -147,12 +154,12 @@ function drawData(data, config, scales){
 
     // highlight row on table
     d3.selectAll('table').select('[team=' + name + ']')
-      .style("background-color", '#f1f1f1')
+      .style("background-color", '#e4ebe7')
   }
 
   function mousemove(d){
     tooltip
-      .html("<p style='font-weight: 700'>#" + d.rank + ": " + d.team + "</p>Historical ratings shown")
+      .html("<p style='font-weight: 700'>#" + d.rank + ": " + d.team + "</p><p style='font-weight: 400; font-size: 0.9em'>Historical ratings shown</p>")
       .style("left", (d3.event.pageX + 20) + "px")
       .style("top", (d3.event.pageY + 20) + "px")
   }
@@ -164,7 +171,8 @@ function drawData(data, config, scales){
     // re-emphasize other points
     d3.selectAll('.currentPoints')
       .style('opacity', 0.8)
-      .style('fill', '#adadad')
+      //.style('fill', '#71807b')
+      .style('fill', d => colorScale(d.conference))
 
     // get team name and change the stroke with all values with this team name
     let name = d3.select(this).attr('team')
@@ -192,7 +200,7 @@ function drawData(data, config, scales){
  container.append("text")
     .attr("class", "quadrantText")
     .attr("transform",
-          "translate(" + 400 + "," + bodyHeight*1/5 + ")")
+          "translate(" + 300 + "," + bodyHeight*1/5 + ")")
     .style("text-anchor", "center")
     .html("HIGH AND INCREASING")
   container.append("text")
@@ -204,7 +212,7 @@ function drawData(data, config, scales){
  container.append("text")
     .attr("class", "quadrantText")
     .attr("transform",
-          "translate(" + 400 + "," + bodyHeight*4/5 + ")")
+          "translate(" + 300 + "," + bodyHeight*4/5 + ")")
     .style("text-anchor", "center")
     .html("LOW BUT INCREASING")
 
@@ -219,7 +227,7 @@ function drawData(data, config, scales){
     .style("stroke", "#c4c4c4")
     .style("fill", "none");
 
-  // add vertical line
+  // add horizontal line
   let meanY = d3.mean(data, d => +d.rating);
   container.append("line")
     .attr("x1", 0)
@@ -232,14 +240,10 @@ function drawData(data, config, scales){
     .style("fill", "none");
 
   // add historical lines
-  var myColor = d3.scaleLinear()
-    .domain([-200,200])
-    .range(["white", "blue"])
   let historicalLine = d3.line()
       .curve(d3.curveCatmullRom.alpha(1))
       .x(d => xScale(d.rating_delta))
       .y(d => yScale(d.rating))
-
   container.append('g')
       .selectAll('lines')
       .data(grouped)
@@ -247,7 +251,8 @@ function drawData(data, config, scales){
       .append("path")
         .attr('d', d => historicalLine(d.values))
         .style('stroke-width', 1.5)
-        .attr('stroke', '#666666')
+        .attr('stroke', '#394E48')
+        //.attr('stroke', d => colorScale(d.conference))
         .style('fill', 'none')
         .style('stroke-opacity', 0)
         .attr('team', d => d.key + "_path")
@@ -260,8 +265,9 @@ function drawData(data, config, scales){
     .append("circle")
       .attr("cx", d => xScale(d.rating_delta))
       .attr("cy", d => yScale(d.rating))
-      .attr("r", 4)
-      .style("fill", "#666666")
+      .attr("r", 3)
+      .style("fill", "#394E48")
+      //.style('fill', d => colorScale(d.conference))
       .style("stroke", '#fff')
       .style('opacity', 0)
       .attr('team', d => d.team + "_circle")
@@ -274,9 +280,11 @@ function drawData(data, config, scales){
     .append("circle")
       .attr("cx", d => xScale(d.rating_delta))
       .attr("cy", d => yScale(d.rating))
-      .attr("r", 10)
+      .attr("r", 8)
       .style('opacity', 0.8)
-      .style("fill", "#adadad")
+      //.style("fill", "#adadad")
+//      .style('fill', '#71807b')
+      .style('fill', d => colorScale(d.conference)) //394E48
       .style('stroke', '#fff')
       .attr('class', 'currentPoints')
       .attr('team', d => d.team)
@@ -284,6 +292,28 @@ function drawData(data, config, scales){
       .on('mouseover', mouseover)
       .on('mousemove', mousemove)
       .on('mouseleave', mouseleave)
+
+  // add subtitle
+  container
+    .append('text')
+    .attr('class', 'subtitle')
+    .attr('x', -75)
+    .attr('y', -20)
+    .text('Hover over points to see team history')
+
+  // add legend
+  let legend = container
+    .append('g')
+    .attr("class", "legend")
+    .attr("transform",
+            "translate(" + bodyWidth*2.5/9 + " ," + (bodyHeight + (margin.bottom*2.5/5)) + ")")
+  legend.append("circle").attr("cx",10).attr("cy",25).attr("r", 6).style("fill", "#C58581")
+  legend.append("circle").attr("cx",100).attr("cy",25).attr("r", 6).style("fill", "#224870")
+  legend.append("text").attr("x", 25).attr("y", 30).text("Eastern").attr("alignment-baseline","middle")
+  legend.append("text").attr("x", 115).attr("y", 30).text("Western Conference").attr("alignment-baseline","middle")
+
+
+
 }
 
 function buildPlot(data){

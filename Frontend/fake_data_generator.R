@@ -14,19 +14,34 @@ tibble(teamA = teams[seq(1, 29, by =2)],
 
 # historical ratings ------------------------------------------------------
 
+conf <- c("Eastern", "Western")
 means <- rnorm(length(teams), 1, 0.1)
-games <- 30
+games <- 60
 
 map2_dfr(.x = teams, .y = means, .f = function(team, mean){
   
+  # simulate random walk of ratings
   mymeans <- c()
   for (i in 1:games){
     mean <- rnorm(1, mean, 0.01)
     mymeans[i] <- mean
   }
   
-  tibble(date = Sys.Date() - 1:30,
+  # create dataframe
+  dat <- tibble(date = Sys.Date() - 1:games,
          team = team,
-         rating = mymeans * 1500)
+         rating = mymeans * 1500,
+         conference = rep(sample(conf, 1), games))
+  
+  # rolling regression
+  indices <- 1:nrow(dat)
+  n_days <- 15
+  coefs <- map_dbl(indices, function(index){
+    coef(lm(rating ~ date, data = dat[index:(index+n_days),]))['date']
+  }) 
+  
+  # combine and return
+  dat %>% 
+    mutate(rating_delta = coefs*n_days)
 }) %>% 
   write_csv("Frontend/Data/team_ratings.csv")
