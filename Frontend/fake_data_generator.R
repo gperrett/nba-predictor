@@ -62,14 +62,44 @@ elo_ratings %>%
   write_csv("Frontend/Data/game_predictions.csv")
 
 # teams by conference
+active_teams <- elo_ratings %>% 
+  filter(season == 2021) %>% 
+  select(team1, team2) %>% 
+  pivot_longer(cols = everything()) %>% 
+  distinct(value) %>% 
+  pull() %>% 
+  sort()
+eastern <- c("BOS", "PHI", "MIL", "IND", "ORL", "BRK", "ATL", "CHA", "NYK", 'CLE', 'MIA', 'CHI', 'TOR', 'WAS', 'DET')
+western <- setdiff(active_teams, eastern)
+conferencs <- tibble(team = c(eastern, western), conference = c(rep("Eastern", 15), rep("Western", 16)))
 
-# 
-elo_ratings %>% 
+# pivot longer, filter to just this season, and add conference
+historical_ratings <- elo_ratings %>%
+  filter(season == 2021 | season == 2020) %>% 
   mutate(team1 = paste0(team1, ":", team1_elo),
          team2 = paste0(team2, ":", team2_elo)) %>% 
   pivot_longer(cols = c(team1, team2)) %>%
   separate(value, sep = ":", into = c("team", "elo")) %>% 
   select(date, team, rating = elo) %>% 
-  mutate(rating = as.numeric(rating),
-         conference = NA, 
-         rating_delta = NA)
+  mutate(rating = as.numeric(rating)) %>% 
+  left_join(conferencs, by = 'team')
+
+# add rating trend
+historical_ratings %>% 
+  group_by(team) %>% 
+  group_split() %>% 
+  map_dfr(., function(team_df){
+    indices <- 1:nrow(team_df)
+    # TODO: possible issue if nrow(df) < 15
+    n_days <- 15
+    coefs <- map_dbl(indices, function(index){
+      coef(lm(rating ~ date, data = team_df[index:(index+n_days),]))['date']
+    })
+    team_df %>% 
+      mutate(rating_delta = coefs*n_days)
+  }) %>%
+  na.omit() %>% 
+  arrange(team, desc(date)) %>% 
+  group_by(team) %>% 
+  mutate(latest = if_else(date == max(date), 1, 0)) %>% 
+  write_csv("Frontend/Data/team_ratings.csv")

@@ -33,7 +33,7 @@ elo_long %>%
   mutate(rank = rank(-elo)) %>% 
   ggplot(aes(x = 1, y = rank)) +
   geom_text(aes(label = team), size = 3) +
-            # position = position_nudge(y = 0.3)) +
+  # position = position_nudge(y = 0.3)) +
   scale_x_continuous(labels = NULL) +
   scale_y_continuous(breaks = 1:30) +
   facet_wrap(~season, nrow = 1) +
