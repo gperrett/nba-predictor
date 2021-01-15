@@ -45,3 +45,31 @@ map2_dfr(.x = teams, .y = means, .f = function(team, mean){
     mutate(rating_delta = coefs*n_days)
 }) %>% 
   write_csv("Frontend/Data/team_ratings.csv")
+
+
+# fudged data from historical elos ----------------------------------------
+
+# read in the data
+elo_ratings <- read_csv("Elo/Data/adjusted_historical_elo.csv")
+
+# filter to last three dates, calculate rough exp probabilties, and write out
+elo_ratings %>% 
+  select(date, teamA = team1, teamB = team2, team1_elo, team2_elo) %>% 
+  filter(date >= nth(unique(date), 3, order_by = rev(sort(unique(date))))) %>% 
+  mutate(probA = 1 / (1 + 10^((team2_elo - team1_elo)/400)),
+         probB = 1 - probA) %>% 
+  select(teamA, teamB, probA, probB, date) %>% 
+  write_csv("Frontend/Data/game_predictions.csv")
+
+# teams by conference
+
+# 
+elo_ratings %>% 
+  mutate(team1 = paste0(team1, ":", team1_elo),
+         team2 = paste0(team2, ":", team2_elo)) %>% 
+  pivot_longer(cols = c(team1, team2)) %>%
+  separate(value, sep = ":", into = c("team", "elo")) %>% 
+  select(date, team, rating = elo) %>% 
+  mutate(rating = as.numeric(rating),
+         conference = NA, 
+         rating_delta = NA)

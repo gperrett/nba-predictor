@@ -32,29 +32,32 @@ sd_elo = 200 # standard deviation of ratings to normalize to
 #plt.show()
 
 # need to incorporate:
-    # fatigue discount
     # margin of victory
 
 # home court advantage
-np.mean(game_data.score1 > game_data.score2) - 0.5
-# see empiricals.R script
+# empiricals.R script -> 9.5 percentage points increase in win rate over expected win rate
 
-# fatigue should be based on
+# fatigue
+# empiricals.R script -> 5 percentage points decrease in win rate over expected win rate for playing a game yesterday
 
 # basic functions
-def get_exp_win(rating_team_A, rating_team_B, home_court, fatigue, c_factor=c_factor, home_court_advantage=0.1):
+def get_exp_win(rating_team_A, rating_team_B, home_court, fatigue, c_factor=c_factor, home_court_advantage=0.1, fatigue_penalty=0.05):
+
+    # calculate exp win using Elo formula
     exp_win = 1 / (1 + 10 ** ((rating_team_B - rating_team_A)/c_factor))
 
     # reduce/increase exp win probably based on home court status
     exp_win = exp_win + (home_court * home_court_advantage) - ((not home_court) * home_court_advantage)
-    exp_win = np.min([1, np.max([0, exp_win])])
 
     # adjust for fatigue
+    exp_win = exp_win - (fatigue * fatigue_penalty)
 
+    # ensure number is between 0 and 1
+    exp_win = np.min([1, np.max([0, exp_win])])
 
     return exp_win
 
-def calc_rating(tenure, actual_win, expected_win, previous_rating, k_factor=k_factor):
+def calc_rating(actual_win, expected_win, previous_rating, tenure=10, k_factor=k_factor):
     # actual_win = 1 if win, 0 if loss
     personal_k_factor = k_factor * (1 / (tenure ** (1/10)))
     new_rating = previous_rating + personal_k_factor * (actual_win - expected_win)
@@ -68,8 +71,15 @@ def normalize_elo(elo_ratings, u_elo=u_elo, sd_elo=sd_elo):
     return elo_ratings
 
 # usage
-#exp_win = get_exp_win(1500, 2000)
+#exp_win = get_exp_win(1500, 2000, True, True)
 #calc_rating(10, 1, exp_win, 1500)
+
+def played_yesterday(team, game_date, game_data=game_data):
+    yesterday_date = game_date - pd.to_timedelta(1, unit='d')
+    boolean_index = np.logical_and(np.logical_or(game_data.team1 == team, game_data.team2 == team), game_data.date == yesterday_date)
+    played_yesterday = (sum(boolean_index) > 0) is True
+
+    return played_yesterday
 
 # get unique datesteams
 teams1 = game_data.team1.unique()
@@ -87,7 +97,7 @@ elo_rating_team2 = []
 #k_tuning = []
 
 # iterate over the game data frame and calculate the new elo ratings
-# takes ~10min
+# takes ~20min
 for index, row in game_data.iterrows():
 
     # print status
@@ -99,22 +109,22 @@ for index, row in game_data.iterrows():
     game_date = row['date']
     winner1 = row['score1'] > row['score2']
 
-    # retrive tenure for these teams
-    tenure_team1 = 10 # tenures[[game_date][team1]]
-    tenure_team2 = 10
+    # did these teams play yesterday?
+    fatigue_team1 = played_yesterday(team1, game_date)
+    fatigue_team2 = played_yesterday(team2, game_date)
 
     # retrieve latest elo rating
-    previous_rating_team1 = current_elo_ratings.loc[[team1]].values
-    previous_rating_team2 = current_elo_ratings.loc[[team2]].values
+    previous_rating_team1 = float(current_elo_ratings.loc[[team1]].values)
+    previous_rating_team2 = float(current_elo_ratings.loc[[team2]].values)
 
     ## get new ratings
     # team1
-    exp_team1 = get_exp_win(previous_rating_team1, previous_rating_team2)
-    rating_team1 = calc_rating(tenure_team1, winner1, exp_team1, previous_rating_team1)
+    exp_team1 = get_exp_win(previous_rating_team1, previous_rating_team2, home_court=True, fatigue=fatigue_team1)
+    rating_team1 = calc_rating(winner1, exp_team1, previous_rating_team1)
 
     ## team2
-    exp_team2 = get_exp_win(previous_rating_team2, previous_rating_team1)
-    rating_team2 = calc_rating(tenure_team2, not winner1, exp_team2, previous_rating_team2)
+    exp_team2 = get_exp_win(previous_rating_team2, previous_rating_team1, home_court=False, fatigue=fatigue_team2)
+    rating_team2 = calc_rating(not winner1, exp_team2, previous_rating_team2)
 
     ## save results
     # save the ratings to the current elo df
@@ -150,4 +160,4 @@ for index, row in game_data.iterrows():
 final_elo_ratings = game_data #.iloc[np.linspace(0 , 6582, 6582)]
 final_elo_ratings['team1_elo'] = elo_rating_team1
 final_elo_ratings['team2_elo'] = elo_rating_team2
-final_elo_ratings.to_csv('Elo/Data/historical_elo.csv')
+final_elo_ratings.to_csv('Elo/Data/adjusted_historical_elo.csv')

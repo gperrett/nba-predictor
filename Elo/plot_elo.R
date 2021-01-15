@@ -3,7 +3,7 @@ setwd('/home/joemarlo/Dropbox/Data/Projects/nba-predictor')
 theme_set(theme_minimal())
 
 # read in the data
-elo_ratings <- read_csv("Elo/Data/historical_elo.csv")
+elo_ratings <- read_csv("Elo/Data/adjusted_historical_elo.csv")
 
 # pivot data longer 
 elo_long <- elo_ratings %>% 
