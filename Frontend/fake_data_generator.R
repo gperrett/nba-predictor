@@ -71,7 +71,7 @@ active_teams <- elo_ratings %>%
   sort()
 eastern <- c("BOS", "PHI", "MIL", "IND", "ORL", "BRK", "ATL", "CHA", "NYK", 'CLE', 'MIA', 'CHI', 'TOR', 'WAS', 'DET')
 western <- setdiff(active_teams, eastern)
-conferencs <- tibble(team = c(eastern, western), conference = c(rep("Eastern", 15), rep("Western", 16)))
+conferences <- tibble(team = c(eastern, western), conference = c(rep("Eastern", 15), rep("Western", 16)))
 
 # pivot longer, filter to just this season, and add conference
 historical_ratings <- elo_ratings %>%
@@ -82,24 +82,25 @@ historical_ratings <- elo_ratings %>%
   separate(value, sep = ":", into = c("team", "elo")) %>% 
   select(date, team, rating = elo) %>% 
   mutate(rating = as.numeric(rating)) %>% 
-  left_join(conferencs, by = 'team')
+  left_join(conferences, by = 'team')
 
-# add rating trend
-historical_ratings %>% 
-  group_by(team) %>% 
+# add rating trend, filter to last 20 games and write out
+historical_ratings %>%
+  arrange(desc(date), team) %>% 
+  group_by(team) %>%
+  mutate(index = n():1) %>% 
   group_split() %>% 
   map_dfr(., function(team_df){
     indices <- 1:nrow(team_df)
-    # TODO: possible issue if nrow(df) < 15
-    n_days <- 15
+    n_games <- 10
     coefs <- map_dbl(indices, function(index){
-      coef(lm(rating ~ date, data = team_df[index:(index+n_days),]))['date']
+      coef(lm(rating ~ index, data = team_df[index:(index+n_games-1),]))['index']
     })
     team_df %>% 
-      mutate(rating_delta = coefs*n_days)
-  }) %>%
-  na.omit() %>% 
-  arrange(team, desc(date)) %>% 
+      mutate(rating_delta = coefs*n_games)
+  }) %>% 
+  select(-index) %>% 
   group_by(team) %>% 
   mutate(latest = if_else(date == max(date), 1, 0)) %>% 
+  slice_head(n = 20) %>% 
   write_csv("Frontend/Data/team_ratings.csv")

@@ -199,10 +199,18 @@ footer > p {
 #tabRankings h3:first-child, #tabMethodology h3:first-child {
   padding: 1.5rem 0 0rem 0;
   margin: 0rem 0 1.5rem 0;
+  max-width: 100%;
 }
 
-#plotRankContainer, #tableRankContainer {
-  float: left;
+#tabRankingsContainers {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.rankingItem {
+  flex-grow: 1;
+  flex-shrink: 1;
 }
 
 #plotRankContainer {
@@ -226,11 +234,6 @@ th {
   width: 800px;
   max-width: 64%;
 }
-#tableRankContainer {
-  max-width: 95%;
-}
-
-
 
 #plotRank, #tableRank {
   border: 1px solid #E2E2E2;
@@ -238,37 +241,33 @@ th {
   background-color: #fff;
   box-shadow: 0.1rem 0.3rem 0.3rem #c9c9c9;
   padding: 1rem;
+  width: auto;
+}
+
+#tableRank {
+  table-layout: fixed;
+  width: auto;
+  max-width: auto;
+  padding: 0.5rem;
+}
+
+.colWidth_Rank {
+  width: 50%;
+}
+.colWidth_Team {
+  width: 50%;
+}
+.colWidth_Rating {
+  width: 50%;
 }
 
 @media (max-width: 767px) {
   #plotRankContainer {
-    width: 95%;
-    max-width: 95%;
+    max-width: 100%;
     margin: 0 0 2rem 0;
   }
   #tableRankContainer {
-    display: inline-block;
-    width: 95%;
-    max-width: 95%;
-    margin: 0;
-    padding: 0;
-  }
-  #tableRank {
-    table-layout: fixed;
-    width: 100%;
-    max-width: 95%;
-    margin: auto;
-    padding: 0.5rem;
-    display: table;
-  }
-  .colWidth_Rank {
-    width: 50%;
-  }
-  .colWidth_Team {
-    width: 50%;
-  }
-  .colWidth_Rating {
-    width: 50%;
+    max-width: 100%;
   }
 }
 
@@ -318,7 +317,7 @@ th {
   background-color: #fff;
   box-shadow: 0.1rem 0.3rem 0.3rem #c9c9c9;
   padding: 1rem;
-  max-width: 900px;
+  max-width: 100%;
 }
 
 #methodologyContainer > p {
@@ -326,6 +325,7 @@ th {
   color: #808080;
   font-size: 0.9em;
   letter-spacing: 0.02em;
+  line-height: 1.5;
 }
 
 #methodologyContainer > h4 {
@@ -335,4 +335,21 @@ th {
 #methodologyContainer > p > a {
   font-weight: 500;
   font-size: 1em;
+}
+
+.corner_ribbon{
+  width: 200px;
+  background: #b0453e;
+  position: fixed;
+  top: 25px;
+  right: -50px;
+  text-align: center;
+  line-height: 50px;
+  letter-spacing: 2px;
+  font-size: 1.2em;
+  color: #f0f0f0;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(45deg);
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  z-index: 999;
 }

@@ -1,6 +1,6 @@
 library(tidyverse)
 setwd('/home/joemarlo/Dropbox/Data/Projects/nba-predictor')
-theme_set(theme_minimal())
+source("Plots/ggplot_settings.R")
 
 # read in the data
 elo_ratings <- read_csv("Elo/Data/adjusted_historical_elo.csv")
@@ -35,12 +35,13 @@ elo_long %>%
   geom_text(aes(label = team), size = 3) +
   # position = position_nudge(y = 0.3)) +
   scale_x_continuous(labels = NULL) +
-  scale_y_continuous(breaks = 1:30) +
+  scale_y_continuous(breaks = 1:30, trans = 'reverse') +
   facet_wrap(~season, nrow = 1) +
   labs(title = "Teams ranked by elo rating by season",
        x = NULL,
        y = NULL) +
   theme(panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
-        panel.grid.major.y = element_blank())
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_line(color = 'grey90'))
 # ggsave("Plots/historical_elo_rankings.png", height = 8, width = 10)

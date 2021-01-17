@@ -3,7 +3,6 @@ import numpy as np
 from datetime import date
 import os
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.preprocessing import scale
 
 # set directory
@@ -16,7 +15,7 @@ game_data = pd.read_csv("Elo/Data/nba_elo.csv")
 # retain only important columns and filter to the last 30 years
 game_data = game_data[['date', 'season', 'team1', 'team2', 'score1', 'score2']]
 game_data['date'] = pd.to_datetime(game_data['date'], format='%Y-%m-%d')
-is_historical = (game_data[['date']] < pd.to_datetime('20210108', format='%Y%m%d')) & (game_data[['date']] > pd.to_datetime('19900601', format='%Y%m%d'))
+is_historical = np.logical_and((game_data[['date']] < pd.to_datetime('20210108', format='%Y%m%d')), (game_data[['season']] > 1988))
 game_data = game_data.loc[np.array(is_historical)].reset_index()
 
 ### define parameters and base functions
@@ -94,6 +93,8 @@ current_elo_ratings = pd.DataFrame({'rating': rookie_elo}, index=teams)
 elo_dates = []
 elo_rating_team1 = []
 elo_rating_team2 = []
+exp_win_team1 = []
+exp_win_team2 = []
 #k_tuning = []
 
 # iterate over the game data frame and calculate the new elo ratings
@@ -133,16 +134,27 @@ for index, row in game_data.iterrows():
 
     # normalize elo ratings
     # TODO: are there historical teams that should be removed?
+    # TDOO: only normalize at end of the week?
     current_elo_ratings = normalize_elo(current_elo_ratings)
 
     # save the ratings to the history
     elo_dates.append(game_date)
     elo_rating_team1.append(float(current_elo_ratings.loc[team1].values))
     elo_rating_team2.append(float(current_elo_ratings.loc[team2].values))
+    exp_win_team1.append(exp_team1)
+    exp_win_team2.append(exp_team2)
 
     # save the squared error to later assess k factor
     #k_tuning.append(float((exp_team1 - winner1)**2) + float((exp_team2 - (not winner1))**2))
 
+# second round: kfactor results of 2010-2020
+#np.mean(k_tuning)
+# 10 = 0.47386035705839913
+# 30 = 0.4365275162438352
+# 35 = 0.4354633599564519
+# 40 = 0.4351857714608
+# 45 = 0.4354633599564519
+# 50 = 0.4360114597168925
 
 # kfactor results of 2010-2020
 #np.mean(k_tuning)
@@ -157,7 +169,9 @@ for index, row in game_data.iterrows():
 # 100 = 0.4711452135111493
 
 # write out results
-final_elo_ratings = game_data #.iloc[np.linspace(0 , 6582, 6582)]
+final_elo_ratings = game_data
 final_elo_ratings['team1_elo'] = elo_rating_team1
 final_elo_ratings['team2_elo'] = elo_rating_team2
+final_elo_ratings['team1_exp_win'] = exp_win_team1
+final_elo_ratings['team2_exp_win'] = exp_win_team2
 final_elo_ratings.to_csv('Elo/Data/adjusted_historical_elo.csv')

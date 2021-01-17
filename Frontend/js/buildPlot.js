@@ -1,47 +1,10 @@
-function cleanData(data){
-
-  /// add a new column of data denoted the lag between dates
-  // split data into each team
-  uniqueTeams = d3.map(data, d => d.team).keys()
-
-  /*
-  // initiate object to hold new data
-  newData = []
-
-  for (var i=0; i<uniqueTeams.length; i++){
-    // get date and filter the data to that date
-    filteredData = []
-    filteredData = data.filter(d => {return d.team == uniqueTeams[i]})
-
-    // add new column with change in rating in last 10 days
-    for (var j=0; j<filteredData.length; j++){
-      if (j < (filteredData.length-10)){
-        filteredData[j]['rating_delta'] = filteredData[j]['rating'] - filteredData[j+10]['rating']
-      }
-    }
-
-    // add data to dataframe
-    newData = newData.concat(filteredData)
-  }
-  */
-
-  // filter to last 30 days
-  uniqueDates = d3.map(data, d => d.date).keys()
-  uniqueDates = uniqueDates.sort(d3.descending)
-  let nDays = 30
-  // TODO: I don't think this date filtering doesn't work
-  newData = data.filter(d => {return d.date >= uniqueDates[nDays]})
-
-  return newData;
-}
-
 function getConfig(){
   let width = 600;
   let height = 450;
   let margin = {
       top: 30,
       bottom: 80,
-      left: 80,
+      left: 60,
       right: 20
   }
 
@@ -79,7 +42,7 @@ function getScales(data, config) {
 
  let colorScale = d3.scaleOrdinal()
       .domain(["Eastern", "Western"])
-      .range(["#C58581", "#224870"])
+      .range(["#183b32", "#80b0a4"])
 
  return {xScale, yScale, colorScale}
 }
@@ -90,6 +53,10 @@ function drawData(data, config, scales){
   console.log('Data into drawData():', data)
 
   let meanY = d3.mean(data, d => +d.rating);
+  let minY = d3.min(data, d => +d.rating);
+  let maxY = d3.max(data, d => +d.rating);
+  let minX = d3.min(data, d => +d.rating_delta)
+  let maxX = d3.max(data, d => +d.rating_delta)
 
   // group the data for drawing the historical lines
   let grouped = d3.nest()
@@ -108,7 +75,7 @@ function drawData(data, config, scales){
   container.append('text')
     .attr('class', 'axisLabel')
     .attr("transform",
-          "translate(" + -margin.left*2/3 + "," + bodyHeight*3/5 + ")rotate(-90)")
+          "translate(" + -margin.left*0.8 + "," + bodyHeight*3/5 + ")rotate(-90)")
     .text("Current rating")
 
   // Add Y axis
@@ -119,7 +86,7 @@ function drawData(data, config, scales){
     .attr('class', 'axisLabel')
     .attr("transform",
             "translate(" + bodyWidth*3/9 + " ," + (bodyHeight + (margin.bottom*2.5/5)) + ")")
-    .text("Rating trend over last 15 days")
+    .text("Rating trend over last 10 games")
 
   // create a tooltip
   let tooltip = d3.select("#plotRank")
@@ -192,27 +159,27 @@ function drawData(data, config, scales){
   // add quadrant identifiers
   container.append("text")
     .attr("class", "quadrantText")
-    .attr("x", xScale(0-15))
-    .attr("y", yScale(meanY*1.05))
-    .style("text-anchor", "end")
+    .attr("x", xScale(minX/2))
+    .attr("y", yScale(meanY + (maxY-meanY)/2))
+    .style("text-anchor", "middle")
     .html("HIGH BUT DECLINING")
  container.append("text")
     .attr("class", "quadrantText")
-    .attr("x", xScale(0+15))
-    .attr("y", yScale(meanY*1.05))
-    .style("text-anchor", "start")
+    .attr("x", xScale(maxX/2))
+    .attr("y", yScale(meanY + (maxY-meanY)/2))
+    .style("text-anchor", "middle")
     .html("HIGH AND INCREASING")
   container.append("text")
     .attr("class", "quadrantText")
-    .attr("x", xScale(0-15))
-    .attr("y", yScale(meanY-(meanY*0.06)))
-    .style("text-anchor", "end")
+    .attr("x", xScale(minX/2))
+    .attr("y", yScale(meanY - (meanY-minY)/2) + 10)
+    .style("text-anchor", "middle")
     .html("LOW AND DECLINING")
  container.append("text")
     .attr("class", "quadrantText")
-    .attr("x", xScale(0+15))
-    .attr("y", yScale(meanY-(meanY*0.06)))
-    .style("text-anchor", "start")
+    .attr("x", xScale(maxX/2))
+    .attr("y", yScale(meanY - (meanY-minY)/2) + 10)
+    .style("text-anchor", "middle")
     .html("LOW BUT INCREASING")
 
   // add vertical line
@@ -295,7 +262,7 @@ function drawData(data, config, scales){
   container
     .append('text')
     .attr('class', 'subtitle')
-    .attr('x', -75)
+    .attr('x', -55)
     .attr('y', -20)
     .text('Hover over points to see team history')
 
@@ -305,18 +272,14 @@ function drawData(data, config, scales){
     .attr("class", "legend")
     .attr("transform",
             "translate(" + bodyWidth*2.5/9 + " ," + (bodyHeight + (margin.bottom*2.5/5)) + ")")
-  legend.append("circle").attr("cx",10).attr("cy",25).attr("r", 6).style("fill", "#C58581")
-  legend.append("circle").attr("cx",100).attr("cy",25).attr("r", 6).style("fill", "#224870")
+  legend.append("circle").attr("cx",10).attr("cy",25).attr("r", 6).style("fill", "#183b32")
+  legend.append("circle").attr("cx",100).attr("cy",25).attr("r", 6).style("fill", "#80b0a4")
   legend.append("text").attr("x", 25).attr("y", 30).text("Eastern").attr("alignment-baseline","middle")
   legend.append("text").attr("x", 115).attr("y", 30).text("Western Conference").attr("alignment-baseline","middle")
-
-
-
 }
 
 function buildPlot(data){
-  filteredData = cleanData(data)
   config = getConfig()
-  scales = getScales(filteredData, config)
-  drawData(filteredData, config, scales)
+  scales = getScales(data, config)
+  drawData(data, config, scales)
 }
