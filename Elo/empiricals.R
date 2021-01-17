@@ -45,6 +45,36 @@ elos %>%
   summarize(exp_win_rate = mean(team1_exp_win),
             act_win_rate = mean(score1 > score2))
 
+# home team expected win rate vs actual win rate: binned by prediction
+binned_home_adjustment <- elos %>% 
+  mutate(bin = cut(team1_exp_win, breaks = seq(0, 1, by = 0.05)),
+         home_win = score1 > score2) %>%
+  left_join(tibble(
+    midpoint_observed = seq(0.05, 1, by = 0.05) - 0.025,
+    bin = cut(midpoint_observed, seq(0, 1, by = 0.05))
+  ), by = 'bin') %>% 
+  group_by(midpoint_observed) %>% 
+  summarize(observed_win_rate = mean(home_win)) %>% 
+  mutate(diff = observed_win_rate - midpoint_observed)
+binned_home_adjustment %>% 
+  ggplot(aes(x = midpoint_observed, y = diff)) +
+  geom_hline(yintercept = 0, color = 'grey70', linetype = 'dashed') +
+  geom_smooth(method = 'loess', color = 'grey50') +
+  geom_line() +
+  geom_point() +
+  labs(title = 'Adjustment for home court advantage',
+       subtitle = 'Terrible teams and slightly-better-than-opponent teams recieve the largest adjustments',
+       x = 'Original binned win probability',
+       y = 'Adjustment to win probability')
+# ggsave("Plots/home_court.png", height = 5, width = 10)
+
+# smooth the curve and write out to df
+loess(diff ~ midpoint_observed, data = binned_home_adjustment) %>% 
+  predict() %>% 
+  tibble(prediction = binned_home_adjustment$midpoint_observed,
+         adjustment = .) %>% 
+  write_csv('Elo/Data/home_court_adjustment.csv')
+
 # conditional on expected win, how often the home team wins 
 elos %>% 
   group_by(home_exp_win = team1_exp_win >= 0.5) %>% 

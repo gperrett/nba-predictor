@@ -68,7 +68,7 @@ elos_adj_wins <- elos_adj_long %>%
 
 # accuracy 
 conf_mat_adj <- table(elos_adj_wins$home_win, elos_adj_wins$projected_home_win)
-(conf_mat['FALSE', 'FALSE'] +  conf_mat['TRUE', 'TRUE']) / nrow(elos_adj_wins)
+(conf_mat_adj['FALSE', 'FALSE'] +  conf_mat_adj['TRUE', 'TRUE']) / nrow(elos_adj_wins)
 
 # correct predictions over time
 elos_adj_wins %>% 
@@ -132,8 +132,8 @@ elos_adjusted %>%
        x = "Midpoint of binned predictions",
        y = "Mean observed win rate")
 
-# derive a confidence interval via cross validation
-cross_val <- map_dfr(1:1000, function(i){
+# derive a confidence interval via bootstrap
+bootstrap <- map_dfr(1:1000, function(i){
   elos_adjusted %>% 
     filter(season > 1992) %>% 
     slice_sample(prop = 1, replace = TRUE) %>% 
@@ -149,7 +149,7 @@ cross_val <- map_dfr(1:1000, function(i){
               .groups = 'drop') %>% 
     mutate(run = i)
 })
-cross_val %>% 
+bootstrap %>% 
   group_by(midpoint) %>% 
   summarize(mean = mean(observed_win_rate),
             high = quantile(observed_win_rate, 0.95),
