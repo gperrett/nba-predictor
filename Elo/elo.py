@@ -4,7 +4,6 @@ from datetime import date
 import os
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import scale
-from loess.loess_2d import loess_2d
 
 # set directory
 os.chdir('/home/joemarlo/Dropbox/Data/Projects/nba-predictor')
@@ -17,7 +16,7 @@ game_data = pd.read_csv("Elo/Data/nba_elo.csv")
 game_data = game_data[['date', 'season', 'team1', 'team2', 'score1', 'score2']]
 game_data['date'] = pd.to_datetime(game_data['date'], format='%Y-%m-%d')
 is_historical = np.logical_and((game_data[['date']] < pd.to_datetime('20210108', format='%Y%m%d')), (game_data[['season']] > 1988))
-game_data = game_data.loc[np.array(is_historical)].reset_index()
+game_data = game_data.loc[np.array(is_historical)].reset_index(drop=True)
 
 ### define parameters and base functions
 # parameters
@@ -44,45 +43,12 @@ def get_adjustment(exp_win, home, fatigue, adjustments=adjustments):
     adjustment = adjustments.iloc[min_index].adjustment
     return adjustment
 
-# home court advantage
-# empiricals.R script -> 9.5 percentage points average increase in win rate over expected win rate
-# but this advantage is materially diferent at different prediction levels
-# home_court_adjustments = pd.read_csv("Elo/Data/home_court_adjustment.csv")
-# def get_home_court_adjustment(exp_win, adjustments=home_court_adjustments):
-#     min_index = np.argmin(abs(exp_win - adjustments['prediction']))
-#     adjustment = adjustments.iloc[min_index].adjustment
-#     return adjustment
-
-# fatigue
-# empiricals.R script -> 5 percentage points decrease in win rate over expected win rate for playing a game yesterday
-# but this advantage is materially diferent at different prediction levels
-# fatigue_adjustments = pd.read_csv("Elo/Data/fatigue_adjustment.csv")
-# def get_fatigue_adjustment(exp_win, fatigue, adjustments=fatigue_adjustments):
-#     adjustments = adjustments.loc[adjustments.fatigue==fatigue]
-#     min_index = np.argmin(abs(exp_win - adjustments['prediction']))
-#     adjustment = adjustments.iloc[min_index].adjustment
-#     return adjustment
-
 # basic functions
-def get_exp_win(rating_team_A, rating_team_B, home_court, fatigue, c_factor=c_factor): #, home_court_advantage=0.1, fatigue_penalty=0.05):
-
+def get_exp_win(rating_team_A, rating_team_B, home_court, fatigue, c_factor=c_factor):
     # calculate exp win using Elo formula
     exp_win = 1 / (1 + 10 ** ((rating_team_B - rating_team_A)/c_factor))
-
-    # # reduce/increase exp win probably based on home court status
-    # exp_win = exp_win + (home_court * home_court_advantage) - ((not home_court) * home_court_advantage)
-    # exp_win = exp_win + (home_court * get_home_court_adjustment(exp_win)) - ((not home_court) * get_home_court_adjustment(1-exp_win))
-    #
-    # # adjust for fatigue
-    # exp_win = exp_win + (fatigue * get_fatigue_adjustment(exp_win, fatigue))
-    # exp_win = (exp_win * (fatigue / (1+fatigue_penalty))) + (exp_win * (not fatigue))
-
-    # adjust for home court advatage and fatigue
-    exp_win = exp_win + get_adjustment(exp_win, home_court, fatigue)
-
-    # ensure number is between 0 and 1
-    exp_win = np.min([1, np.max([0, exp_win])])
-
+    # adjust for home court advantage and fatigue
+    exp_win += get_adjustment(exp_win, home_court, fatigue)
     return exp_win
 
 def calc_rating(actual_win, expected_win, previous_rating, tenure=10, k_factor=k_factor):
@@ -98,15 +64,10 @@ def normalize_elo(elo_ratings, u_elo=u_elo, sd_elo=sd_elo):
     elo_ratings['rating'] = np.array(new_ratings)
     return elo_ratings
 
-# usage
-#exp_win = get_exp_win(1500, 2000, True, True)
-#calc_rating(10, 1, exp_win, 1500)
-
 def played_yesterday(team, game_date, game_data=game_data):
     yesterday_date = game_date - pd.to_timedelta(1, unit='d')
     boolean_index = np.logical_and(np.logical_or(game_data.team1 == team, game_data.team2 == team), game_data.date == yesterday_date)
     played_yesterday = (sum(boolean_index) > 0) is True
-
     return played_yesterday
 
 # get unique datesteams
@@ -147,13 +108,15 @@ for index, row in game_data.iterrows():
     previous_rating_team1 = float(current_elo_ratings.loc[[team1]].values)
     previous_rating_team2 = float(current_elo_ratings.loc[[team2]].values)
 
-    ## get new ratings
-    # team1
+    # get win probabiltiies
     exp_team1 = get_exp_win(previous_rating_team1, previous_rating_team2, home_court=True, fatigue=fatigue_team1)
-    rating_team1 = calc_rating(winner1, exp_team1, previous_rating_team1)
-
-    ## team2
     exp_team2 = get_exp_win(previous_rating_team2, previous_rating_team1, home_court=False, fatigue=fatigue_team2)
+
+    # normalize win probabilities so they sum to 1
+    exp_team1, exp_team2 = np.array([exp_team1, exp_team2]) / sum([exp_team1, exp_team2])
+
+    # get new ratings
+    rating_team1 = calc_rating(winner1, exp_team1, previous_rating_team1)
     rating_team2 = calc_rating(not winner1, exp_team2, previous_rating_team2)
 
     ## save results
@@ -161,10 +124,8 @@ for index, row in game_data.iterrows():
     current_elo_ratings.loc[[team1]] = rating_team1
     current_elo_ratings.loc[[team2]] = rating_team2
 
-    # normalize elo ratings
-    # TODO: are there historical teams that should be removed?
-    # TDOO: only normalize at end of the week?
-    current_elo_ratings = normalize_elo(current_elo_ratings)
+    # normalize elo ratings every 500 games (about 4-5 times per season)
+    if index % 500 == 0: current_elo_ratings = normalize_elo(current_elo_ratings)
 
     # save the ratings to the history
     elo_dates.append(game_date)

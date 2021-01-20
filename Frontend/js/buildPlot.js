@@ -1,6 +1,6 @@
 function getConfig(){
   let width = 600;
-  let height = 550;
+  let height = 525;
   let margin = {
       top: 30,
       bottom: 80,
