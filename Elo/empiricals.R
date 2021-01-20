@@ -2,6 +2,10 @@ library(tidyverse)
 setwd('~/Dropbox/Data/Projects/nba-predictor')
 source("Plots/ggplot_settings.R")
 
+# in retrospect, a better method would be to model the difference in exp win and 
+  # observed win as a function home court and fatigue status. The below script
+  # estimates the effects individually
+
 # read in results from first elo run
 elos <- read_csv('Elo/Data/historical_elo.csv')
 
@@ -50,28 +54,28 @@ binned_home_adjustment <- elos %>%
   mutate(bin = cut(team1_exp_win, breaks = seq(0, 1, by = 0.05)),
          home_win = score1 > score2) %>%
   left_join(tibble(
-    midpoint_observed = seq(0.05, 1, by = 0.05) - 0.025,
-    bin = cut(midpoint_observed, seq(0, 1, by = 0.05))
+    midpoint_exp = seq(0.05, 1, by = 0.05) - 0.025,
+    bin = cut(midpoint_exp, seq(0, 1, by = 0.05))
   ), by = 'bin') %>% 
-  group_by(midpoint_observed) %>% 
+  group_by(midpoint_exp) %>% 
   summarize(observed_win_rate = mean(home_win)) %>% 
-  mutate(diff = observed_win_rate - midpoint_observed)
+  mutate(diff = observed_win_rate - midpoint_exp)
 binned_home_adjustment %>% 
-  ggplot(aes(x = midpoint_observed, y = diff)) +
+  ggplot(aes(x = midpoint_exp, y = diff)) +
   geom_hline(yintercept = 0, color = 'grey70', linetype = 'dashed') +
   geom_smooth(method = 'loess', color = 'grey50') +
   geom_line() +
   geom_point() +
   labs(title = 'Adjustment for home court advantage',
-       subtitle = 'Terrible teams and slightly-better-than-opponent teams recieve the largest adjustments',
+       subtitle = 'Home court advantage has the strongest effect on teams predicted to lose badly and teams predicted slightly beat their opponents',
        x = 'Original binned win probability',
        y = 'Adjustment to win probability')
-# ggsave("Plots/home_court.png", height = 5, width = 10)
+# ggsave("Plots/home_court_adjustment.png", height = 5, width = 10)
 
 # smooth the curve and write out to df
-loess(diff ~ midpoint_observed, data = binned_home_adjustment) %>% 
+loess(diff ~ midpoint_exp, data = binned_home_adjustment) %>% 
   predict() %>% 
-  tibble(prediction = binned_home_adjustment$midpoint_observed,
+  tibble(prediction = binned_home_adjustment$midpoint_exp,
          adjustment = .) %>% 
   write_csv('Elo/Data/home_court_adjustment.csv')
 
@@ -142,5 +146,105 @@ team_schedule %>%
        y = NULL,
        fill = NULL)
 # ggsave("Plots/fatigue_results.png", height = 8, width = 10)
-  
-  
+
+# home team expected win rate vs actual win rate: binned by prediction
+elo_long_fatigue <- elo_long %>% 
+  arrange(team, date) %>% 
+  group_by(team) %>% 
+  group_split() %>% 
+  map_dfr(function(df){
+    max_index <- nrow(df)
+    games_played <- map_dbl(1:max_index, function(index){
+      df_sliced <- df[1:index,]
+      games_played <- sum(df_sliced$date >= (last(df_sliced$date)-1))-1
+      return(games_played)
+    })
+    
+    # add games back to df
+    df %>% 
+      mutate(fatigue = games_played > 0)
+  })
+binned_fatigue_adjustment <- elo_long_fatigue %>% 
+  mutate(bin = cut(exp_win, breaks = seq(0, 1, by = 0.05))) %>%
+  left_join(tibble(
+    midpoint_exp = seq(0.05, 1, by = 0.05) - 0.025,
+    bin = cut(midpoint_exp, seq(0, 1, by = 0.05))
+  ), by = 'bin') %>% 
+  group_by(midpoint_exp, fatigue) %>% 
+  summarize(observed_win_rate = mean(win)) %>%
+  mutate(diff = observed_win_rate - midpoint_exp)
+
+# plot the absolute difference between teams w/ and w/o fatigue
+# note: the implemented adjustment will be the difference between observed_win_rate
+  # and midpoint_exp per teams with or without fatigue
+binned_fatigue_adjustment %>%
+  select(midpoint_exp, fatigue, observed_win_rate) %>%
+  pivot_wider(names_from = fatigue, values_from = observed_win_rate) %>%
+  mutate(diff = `TRUE` - `FALSE`) %>%
+  ggplot(aes(x = midpoint_exp, y = diff)) + #, color = fatigue, group = fatigue)) +
+  geom_hline(yintercept = 0, color = 'grey70', linetype = 'dashed') +
+  geom_smooth(method = 'loess', color = 'grey50') +
+  geom_line() +
+  geom_point() +
+  labs(title = 'Adjustment for fatigue',
+       subtitle = 'Fatigue has the strongest effect on teams that are predicted to slightly beat their opponents',
+       x = 'Original binned win probability',
+       y = 'Adjustment to win probability',
+       caption = 'Fatigue defined as playing at least one game in same or previous day')
+# ggsave("Plots/fatigue_adjustment.png", height = 5, width = 10)
+
+# smooth the curve and write out to df
+loess(diff ~ midpoint_exp + fatigue, data = binned_fatigue_adjustment) %>% 
+  predict() %>% 
+  tibble(prediction = binned_fatigue_adjustment$midpoint_exp,
+         fatigue = binned_fatigue_adjustment$fatigue,
+         adjustment = .) %>% 
+  write_csv('Elo/Data/fatigue_adjustment.csv')
+
+
+# model -------------------------------------------------------------------
+
+# create df indicating if home and if fatigue
+elo_interaction <- elo_long_fatigue %>% 
+  mutate(bin = cut(exp_win, breaks = seq(0, 1, by = 0.05))) %>%
+  left_join(tibble(
+    midpoint_exp = seq(0.05, 1, by = 0.05) - 0.025,
+    bin = cut(midpoint_exp, seq(0, 1, by = 0.05))
+  ), by = 'bin') %>% 
+  group_by(midpoint_exp, fatigue, home) %>% 
+  summarize(observed_win_rate = mean(win)) %>%
+  mutate(diff = observed_win_rate - midpoint_exp)
+
+elo_interaction %>% 
+  mutate(group = paste0(home,':',fatigue)) %>% 
+  ggplot(aes(x=midpoint_exp, y=observed_win_rate, group=group, color=group)) +
+  geom_abline(linetype='dashed', color='grey50') +
+  geom_line() +
+  geom_point() +
+  labs(title = 'Difference between actual win rate and expected win rate',
+       caption = 'Fatigue defined as playing at least one game in same or previous day',
+       x = 'Original binned win probability',
+       y = 'Observed win probability',
+       color = 'Home:Fatigue')
+
+elo_interaction %>%
+  mutate(group = paste0(home,':',fatigue)) %>% 
+  ggplot(aes(x=midpoint_exp, y=diff, group=group, color=group)) +
+  geom_hline(yintercept = 0, color = 'grey70', linetype = 'dashed') +
+  geom_smooth(method = 'loess', color = 'grey50') +
+  geom_line() +
+  geom_point() +
+  labs(title = 'Adjustment to win probability due to fatigue and home court advantage',
+       caption = 'Fatigue defined as playing at least one game in same or previous day',
+       x = 'Original binned win probability',
+       y = 'Adjustment to win probability',
+       color = 'Home:Fatigue')
+
+# write out adjustments
+loess(diff ~ midpoint_exp + fatigue*home, data=elo_interaction) %>% 
+  predict() %>% 
+  tibble(prior_prediction = elo_interaction$midpoint_exp,
+         fatigue = elo_interaction$fatigue,
+         home = elo_interaction$home,
+         adjustment = .) %>% 
+  write_csv('Elo/Data/adjustments.csv')

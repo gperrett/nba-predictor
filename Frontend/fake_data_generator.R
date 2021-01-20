@@ -59,6 +59,7 @@ elo_ratings %>%
   mutate(probA = 1 / (1 + 10^((team2_elo - team1_elo)/400)),
          probB = 1 - probA) %>% 
   select(teamA, teamB, probA, probB, date) %>% 
+  arrange(date) %>% # this determines the order of the date sections on predictions page
   write_csv("Frontend/Data/game_predictions.csv")
 
 # teams by conference

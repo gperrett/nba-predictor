@@ -4,6 +4,7 @@ from datetime import date
 import os
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import scale
+from loess.loess_2d import loess_2d
 
 # set directory
 os.chdir('/home/joemarlo/Dropbox/Data/Projects/nba-predictor')
@@ -33,31 +34,51 @@ sd_elo = 200 # standard deviation of ratings to normalize to
 # need to incorporate:
     # margin of victory
 
+# read in the dataframe of adjustments for home court advantage and fatigue
+# note: modeling this on the python side would be better but could not find
+    # a suitable 2d loess function
+adjustments = pd.read_csv("Elo/Data/adjustments.csv")
+def get_adjustment(exp_win, home, fatigue, adjustments=adjustments):
+    adjustments = adjustments.loc[np.logical_and(adjustments.home==home, adjustments.fatigue==fatigue)]
+    min_index = np.argmin(abs(exp_win - adjustments.prior_prediction))
+    adjustment = adjustments.iloc[min_index].adjustment
+    return adjustment
+
 # home court advantage
 # empiricals.R script -> 9.5 percentage points average increase in win rate over expected win rate
 # but this advantage is materially diferent at different prediction levels
-home_court_adjustments = pd.read_csv("Elo/Data/home_court_adjustment.csv")
-def get_home_court_adjustment(exp_win, home_court_adjustments=home_court_adjustments):
-    min_index = np.argmin(abs(exp_win - home_court_adjustments['prediction']))
-    home_court_adjustment = home_court_adjustments.iloc[min_index].adjustment
-    return home_court_adjustment
+# home_court_adjustments = pd.read_csv("Elo/Data/home_court_adjustment.csv")
+# def get_home_court_adjustment(exp_win, adjustments=home_court_adjustments):
+#     min_index = np.argmin(abs(exp_win - adjustments['prediction']))
+#     adjustment = adjustments.iloc[min_index].adjustment
+#     return adjustment
 
 # fatigue
 # empiricals.R script -> 5 percentage points decrease in win rate over expected win rate for playing a game yesterday
+# but this advantage is materially diferent at different prediction levels
+# fatigue_adjustments = pd.read_csv("Elo/Data/fatigue_adjustment.csv")
+# def get_fatigue_adjustment(exp_win, fatigue, adjustments=fatigue_adjustments):
+#     adjustments = adjustments.loc[adjustments.fatigue==fatigue]
+#     min_index = np.argmin(abs(exp_win - adjustments['prediction']))
+#     adjustment = adjustments.iloc[min_index].adjustment
+#     return adjustment
 
 # basic functions
-def get_exp_win(rating_team_A, rating_team_B, home_court, fatigue, c_factor=c_factor, home_court_advantage=0.1, fatigue_penalty=0.05):
+def get_exp_win(rating_team_A, rating_team_B, home_court, fatigue, c_factor=c_factor): #, home_court_advantage=0.1, fatigue_penalty=0.05):
 
     # calculate exp win using Elo formula
     exp_win = 1 / (1 + 10 ** ((rating_team_B - rating_team_A)/c_factor))
 
-    # reduce/increase exp win probably based on home court status
-    #exp_win = exp_win + (home_court * home_court_advantage) - ((not home_court) * home_court_advantage)
-    exp_win = exp_win + (home_court * get_home_court_adjustment(exp_win)) - ((not home_court) * get_home_court_adjustment(1-exp_win))
+    # # reduce/increase exp win probably based on home court status
+    # exp_win = exp_win + (home_court * home_court_advantage) - ((not home_court) * home_court_advantage)
+    # exp_win = exp_win + (home_court * get_home_court_adjustment(exp_win)) - ((not home_court) * get_home_court_adjustment(1-exp_win))
+    #
+    # # adjust for fatigue
+    # exp_win = exp_win + (fatigue * get_fatigue_adjustment(exp_win, fatigue))
+    # exp_win = (exp_win * (fatigue / (1+fatigue_penalty))) + (exp_win * (not fatigue))
 
-    # adjust for fatigue
-    exp_win = exp_win - (fatigue * fatigue_penalty)
-    #exp_win = (exp_win * (fatigue / (1+fatigue_penalty))) + (exp_win * (not fatigue))
+    # adjust for home court advatage and fatigue
+    exp_win = exp_win + get_adjustment(exp_win, home_court, fatigue)
 
     # ensure number is between 0 and 1
     exp_win = np.min([1, np.max([0, exp_win])])
@@ -156,7 +177,7 @@ for index, row in game_data.iterrows():
     #k_tuning.append(float((exp_team1 - winner1)**2) + float((exp_team2 - (not winner1))**2))
 
 # second round: kfactor results of 2010-2020
-#np.mean(k_tuning)
+# np.mean(k_tuning)
 # 10 = 0.47386035705839913
 # 30 = 0.4365275162438352
 # 35 = 0.4354633599564519
