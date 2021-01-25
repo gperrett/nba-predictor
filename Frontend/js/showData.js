@@ -1,7 +1,7 @@
 function showData(data){
   buildGrid(data.predictions)
   buildTable(data.ratings)
-  buildPlot(store.ratings)
+  buildPlot(data.ratings)
 }
 
 // read in the data

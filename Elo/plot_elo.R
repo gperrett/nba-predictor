@@ -18,6 +18,8 @@ elo_long <- elo_ratings %>%
 elo_long %>% 
   ggplot(aes(x = date, y = elo, group = team, color = team)) +
   geom_line(alpha = 0.3) +
+  scale_x_date(date_labels = "%b") +
+  facet_wrap(~season, scales = 'free_x') +
   labs(title = "Team elo ratings",
        x = NULL,
        y = NULL,

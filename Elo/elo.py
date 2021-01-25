@@ -70,11 +70,13 @@ def played_yesterday(team, game_date, game_data=game_data):
     played_yesterday = (sum(boolean_index) > 0) is True
     return played_yesterday
 
-# get unique datesteams
-teams1 = game_data.team1.unique()
-teams2 = game_data.team2.unique()
-teams = np.concatenate((teams1, teams2))
-teams = pd.Series(teams).unique()
+# add identifier for last game of the season
+first_games_of_season = game_data.groupby('season').first()
+first_games_of_season['bgn_of_season'] = True
+game_data = game_data.merge(first_games_of_season, how='left')
+
+# get unique dates
+teams = game_data.loc[game_data.season == 1989].team1.unique()
 
 # initialize df of rating (this will hold the latest elo ratings)
 current_elo_ratings = pd.DataFrame({'rating': rookie_elo}, index=teams)
@@ -91,14 +93,24 @@ exp_win_team2 = []
 # takes ~20min
 for index, row in game_data.iterrows():
 
-    # print status
-    if index % 100 == 0: print("On game: ", index, " of ", len(game_data))
+    # print status every 100 games
+    if index % 100 == 0: print("On game ", index, " of ", len(game_data))
 
     # extract team names, date, and winner
     team1 = row['team1']
     team2 = row['team2']
     game_date = row['date']
     winner1 = row['score1'] > row['score2']
+    bgn_of_season = row['bgn_of_season']
+    season = row['season']
+
+    # at beginning of season, remove old teams, add new teams
+        # and normalize elo ratings
+    if bgn_of_season and season > 1989:
+        new_teams = game_data.loc[game_data.season == season].team1.unique()
+        new_elo_ratings = pd.DataFrame(index=new_teams)
+        current_elo_ratings = new_elo_ratings.join(current_elo_ratings).fillna(rookie_elo)
+        current_elo_ratings = normalize_elo(current_elo_ratings)
 
     # did these teams play yesterday?
     fatigue_team1 = played_yesterday(team1, game_date)
@@ -123,9 +135,6 @@ for index, row in game_data.iterrows():
     # save the ratings to the current elo df
     current_elo_ratings.loc[[team1]] = rating_team1
     current_elo_ratings.loc[[team2]] = rating_team2
-
-    # normalize elo ratings every 500 games (about 4-5 times per season)
-    if index % 500 == 0: current_elo_ratings = normalize_elo(current_elo_ratings)
 
     # save the ratings to the history
     elo_dates.append(game_date)
