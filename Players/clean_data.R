@@ -90,7 +90,7 @@ non_2020 <- dat %>% anti_join(season_2020)
 
 non_2020 <- non_2020 %>% 
   arrange(Date) %>% 
-  mutate(season = if_else(month(Date) > 10, year(Date) + 1, year(Date)))
+  mutate(season = if_else(month(Date) >= 10, year(Date) + 1, year(Date)))
 
 dat <- rbind.data.frame(non_2020, season_2020)
 rm(season_2020)
